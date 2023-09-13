@@ -3,12 +3,15 @@
 # Required parameters:
 # @raycast.schemaVersion 1
 # @raycast.title GitHubUniversalFetcher
-# @raycast.mode silent
+# @raycast.mode fullOutput
 # @raycast.description Download content from any GitHub URL.
 
 # Optional parameters:
-# @raycast.icon images/github-mark-white.png
+# @raycast.icon 📥
 # @raycast.packageName GitHub Tools
+# @raycast.needsConfirmation false
+# @raycast.author Marcus Hamelink
+# @raycast.authorURL https://github.com/animarcus
 # @raycast.argument1 { "type": "text", "placeholder": "GitHub URL" }
 # @raycast.argument2 { "type": "text", "placeholder": "Destination Path", "optional": true }
 
