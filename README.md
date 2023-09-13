@@ -1,6 +1,6 @@
 # Github Universal Fetcher
 
-GitHubUniversalFetcher is a command-line tool that allows users to download content from any GitHub URL. Whether you're interested in a specific file, a folder, or an entire repository, GitHubUniversalFetcher has you covered.
+GitHub Universal Fetcher is a command-line tool that allows users to download content from any GitHub URL. Whether you're interested in a specific file, a folder, or an entire repository, GitHubUniversalFetcher has you covered.
 
 ## Table of Contents
 
