@@ -19,6 +19,9 @@ download_github_folder() {
     # Input: GitHub URL and Destination directory
     local URL="$1"
     local DEST_DIR="$2"
+    if [ -z "$DEST_DIR" ] || [ "$DEST_DIR" == "." ] || [ "$DEST_DIR" == "./" ]; then
+        DEST_DIR=$(pwd)
+    fi
 
     # Extract user, repo, branch, and folder path from the URL
     local USER
@@ -64,24 +67,26 @@ download_github_folder() {
 
         FILE_NAME=$(basename "${FILE_PATH}")
 
-        LOCAL_PATH="${DEST_DIR}/${PARENT_DIR_NAME}/${FILE_NAME}"
+        # LOCAL_PATH="${DEST_DIR}/${PARENT_DIR_NAME}/${FILE_NAME}"
+        if [[ $(echo "$FILES" | wc -l) -eq 1 ]]; then
+            LOCAL_PATH="${DEST_DIR}/${FILE_NAME}"
+        else
+            LOCAL_PATH="${DEST_DIR}/${PARENT_DIR_NAME}/${FILE_NAME}"
+        fi
 
         # Create folder structure and download file
-        mkdir -p "${DEST_DIR}/${PARENT_DIR_NAME}"
+        mkdir -p "$(dirname "$LOCAL_PATH")"
 
-        echo "FILE name: $FILE_NAME"
-        echo "FILE path: $FILE_PATH"
-        echo "LOCAL_PATH: $LOCAL_PATH"
-        find "$(dirname "$LOCAL_PATH")" | cat
+        # echo "FILE name: $FILE_NAME"
+        # echo "FILE path: $FILE_PATH"
+        # echo "LOCAL_PATH: $LOCAL_PATH"
+        # find "$(dirname "$LOCAL_PATH")" | cat
         # echo "Attempting to download to: $LOCAL_PATH"
         curl "$FILE_URL" -o "$LOCAL_PATH"
     done
 
     echo "Downloaded to $DEST_DIR"
 }
-
-# Example usage:
-# download_github_folder "https://github.com/animarcus/EPFL-All-Docs/tree/main/MAN/Analyse%20B/Séries" "./downloaded_folder"
 
 # Check for the correct number of arguments
 if [[ $# -lt 1 ]]; then
@@ -106,6 +111,11 @@ get_destination_path() {
     if [[ -n "$provided_path" ]]; then
         echo "$provided_path"
     else
+        if [[ -z "$RAYCAST_SCHEMA_VERSION" ]]; then
+            # If not run from Raycast, return the provided path
+            echo "$provided_path"
+            return
+        fi
         # If path is not provided, try to get the focused Finder window path
         local focused_finder_path
         focused_finder_path=$(osascript -e 'tell app "Finder" to get the POSIX path of (target of front window as alias)' 2>/dev/null)
@@ -119,5 +129,4 @@ get_destination_path() {
 }
 
 echo args: "$1" "$(get_destination_path "$2")"
-
 download_github_folder "$1" "$(get_destination_path "$2")"
