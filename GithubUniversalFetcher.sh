@@ -4,7 +4,7 @@
 # @raycast.schemaVersion 1
 # @raycast.title GitHub Universal Fetcher
 # @raycast.mode fullOutput
-# @raycast.description Download content from any GitHub URL.
+# @raycast.description Download content from any GitHub URL using DownGit. (Default path is either the currently focused finder window or the Desktop)
 
 # Optional parameters:
 # @raycast.icon 📥
@@ -15,95 +15,79 @@
 # @raycast.argument1 { "type": "text", "placeholder": "GitHub URL" }
 # @raycast.argument2 { "type": "text", "placeholder": "Destination Path", "optional": true }
 
-# Function to check if the provided URL is valid
-function is_valid_url() {
-    local url="$1"
-    if [[ $url =~ ^https://github\.com/.*$ ]]; then
-        return 0
+download_github_folder() {
+    # Input: GitHub URL and Destination directory
+    local URL="$1"
+    local DEST_DIR="$2"
+
+    # Extract user, repo, branch, and folder path from the URL
+    local USER
+    local REPO
+    local BRANCH
+    local FOLDER_PATH
+    # Extract user, repo, branch, and folder path from the URL
+    if [[ "$URL" =~ https://github.com/([^/]+)/([^/]+)/(blob|tree)/([^/]+)/?(.*) ]]; then
+        USER=${BASH_REMATCH[1]}
+        REPO=${BASH_REMATCH[2]}
+        BRANCH=${BASH_REMATCH[4]}
+        FOLDER_PATH=${BASH_REMATCH[5]}
     else
-        return 1
-    fi
-}
-
-# Function to download content from GitHub
-function download_github_content() {
-    local url="$1"
-    local path="$2"
-
-    # Check if the URL is valid
-    if ! is_valid_url "$url"; then
-        echo "Invalid GitHub URL: $url"
+        echo "Invalid GitHub URL format"
         exit 1
     fi
 
-    # Remove trailing slash from path (if any)
-    path="${path%/}"
+    # Convert spaces in folder path to %20 for URL encoding
+    FOLDER_PATH=${FOLDER_PATH// /%20}
 
-    # Extract the name for the dedicated directory only if it's not a single file
-    if [[ "$url" == *"/tree/"* ]]; then
-        # For folder URLs, use the branch or folder name
-        folder_name=$(basename "$url")
-        path="$path/$folder_name"
-    elif [[ "$url" != *"/blob/"* ]]; then
-        # For repository URLs, use the repository name
-        folder_name=$(basename "$url")
-        path="$path/$folder_name"
+    # If FOLDER_PATH is empty, it means the entire repo (or specific branch) needs to be cloned
+    if [ -z "$FOLDER_PATH" ]; then
+        echo "Detected repository root. Cloning the repository..."
+        git clone -b "$BRANCH" "https://github.com/$USER/$REPO.git" "${DEST_DIR}/${REPO}"
+        echo "Cloned to ${DEST_DIR}/${REPO}/"
+        exit 0
     fi
 
-    # Determine if it's a file, folder, or repository URL
-    if [[ "$url" == *"/blob/"* ]]; then
-        # It's a file URL
-        file_url="${url//github.com/raw.githubusercontent.com}"
-        file_url="${file_url//blob\//}"
-        curl -L "$file_url" -o "$path/$(basename "$url")"
-    elif [[ "$url" == *"/tree/"* ]]; then
-        # It's a folder URL
-        repo=$(echo "$url" | awk -F'/' '{print $4"/"$5}')
-        branch=$(echo "$url" | awk -F'/' '{print $7}')
-        sub_path=$(echo "$url" | cut -d '/' -f 8-)
-        api_url="https://api.github.com/repos/$repo/git/trees/$branch:$sub_path?recursive=1"
-        content_json="$(curl -s "$api_url")"
+    local API_URL="https://api.github.com/repos/$USER/$REPO/contents/$FOLDER_PATH?ref=$BRANCH"
 
-        # Extract all file paths
-        files=$(echo "$content_json" | jq -r '.tree[] | select(.type=="blob") | .path')
+    # Get the list of all files in the specified directory
+    local FILES
+    FILES=$(curl -s "$API_URL" | grep -Eo '"download_url": "[^"]+"' | grep -Eo "https://raw[^\" ]+")
+    # Download each file
+    for FILE_URL in $FILES; do
+        # Extract the file path from the URL to create a local directory structure
+        local FILE_PATH
+        local LOCAL_PATH
+        local FILE_NAME
+        FILE_PATH=${FILE_URL##*/}
 
-        # Download each file
-        for file in $files; do
-            file_url="https://raw.githubusercontent.com/$repo/$branch/$file"
-            curl -L "$file_url" -o "$path/$file" --create-dirs
-        done
-    else
-        # Assume it's a repository URL
-        repo=$(echo "$url" | awk -F'/' '{print $4"/"$5}')
-        branch="master" # default branch, can be changed if necessary
-        archive_url="https://github.com/$repo/archive/refs/heads/$branch.tar.gz"
-        mkdir -p "$path"
-        curl -L "$archive_url" | tar xz -C "$path"
-    fi
+        PARENT_DIR_NAME=$(basename "$FOLDER_PATH")
 
-    full_path=$(realpath "$path")
+        FILE_NAME=$(basename "${FILE_PATH}")
 
-    echo "$full_path"
+        LOCAL_PATH="${DEST_DIR}/${PARENT_DIR_NAME}/${FILE_NAME}"
+
+        # Create folder structure and download file
+        mkdir -p "${DEST_DIR}/${PARENT_DIR_NAME}"
+
+        echo "FILE name: $FILE_NAME"
+        echo "FILE path: $FILE_PATH"
+        echo "LOCAL_PATH: $LOCAL_PATH"
+        find "$(dirname "$LOCAL_PATH")" | cat
+        # echo "Attempting to download to: $LOCAL_PATH"
+        curl "$FILE_URL" -o "$LOCAL_PATH"
+    done
+
+    echo "Downloaded to $DEST_DIR"
 }
 
-# Check for required tools: curl and jq
-if ! command -v curl &>/dev/null; then
-    echo "Error: curl is not installed."
-    echo "Please install curl. More info: https://curl.se/download.html"
-    exit 1
-fi
-
-if ! command -v jq &>/dev/null; then
-    echo "Error: jq is not installed."
-    echo "Please install jq. More info: https://stedolan.github.io/jq/download/"
-    exit 1
-fi
+# Example usage:
+# download_github_folder "https://github.com/animarcus/EPFL-All-Docs/tree/main/MAN/Analyse%20B/Séries" "./downloaded_folder"
 
 # Check for the correct number of arguments
 if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <GitHub URL> [<Destination Path>]"
     echo ""
-    echo "GitHubUniversalFetcher is designed to download content from any GitHub URL."
+    echo "GitHubUniversalFetcher is designed to download content from any GitHub URL using DownGit."
     echo "It handles file, folder, or entire repository URLs from GitHub."
     echo ""
     echo "Parameters:"
@@ -117,7 +101,23 @@ if [[ $# -lt 1 ]]; then
     exit 1
 fi
 
-url="$1"
-path="${2:-.}" # Default to current directory if no path is provided
+get_destination_path() {
+    local provided_path="$1"
+    if [[ -n "$provided_path" ]]; then
+        echo "$provided_path"
+    else
+        # If path is not provided, try to get the focused Finder window path
+        local focused_finder_path
+        focused_finder_path=$(osascript -e 'tell app "Finder" to get the POSIX path of (target of front window as alias)' 2>/dev/null)
+        if [[ -z "$focused_finder_path" ]]; then
+            # If no Finder window is focused, default to the desktop
+            echo "$HOME/Desktop"
+        else
+            echo "$focused_finder_path"
+        fi
+    fi
+}
 
-download_github_content "$url" "$path"
+echo args: "$1" "$(get_destination_path "$2")"
+
+download_github_folder "$1" "$(get_destination_path "$2")"
