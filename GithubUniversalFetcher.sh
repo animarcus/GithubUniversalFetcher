@@ -5,7 +5,6 @@
 # @raycast.title GitHub Universal Fetcher
 # @raycast.mode fullOutput
 # @raycast.description Download content from any GitHub URL using DownGit. (Default path is either the currently focused finder window or the Desktop)
-
 # Optional parameters:
 # @raycast.icon 📥
 # @raycast.packageName Github Universal Fetcher package
@@ -15,20 +14,16 @@
 # @raycast.argument1 { "type": "text", "placeholder": "GitHub URL" }
 # @raycast.argument2 { "type": "text", "placeholder": "Destination Path", "optional": true }
 
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+APPLESCRIPT_DIR="$SCRIPT_DIR/applescript-helper-tools"
+
 download_github_folder() {
     # Input: GitHub URL and Destination directory
     local URL="$1"
     local DEST_DIR="$2"
-    if [ -z "$DEST_DIR" ] || [ "$DEST_DIR" == "." ] || [ "$DEST_DIR" == "./" ]; then
-        DEST_DIR=$(pwd)
-    fi
 
     # Extract user, repo, branch, and folder path from the URL
-    local USER
-    local REPO
-    local BRANCH
-    local FOLDER_PATH
-    # Extract user, repo, branch, and folder path from the URL
+    local USER REPO BRANCH FOLDER_PATH
     if [[ "$URL" =~ https://github.com/([^/]+)/([^/]+)/(blob|tree)/([^/]+)/?(.*) ]]; then
         USER=${BASH_REMATCH[1]}
         REPO=${BASH_REMATCH[2]}
@@ -44,9 +39,10 @@ download_github_folder() {
 
     # If FOLDER_PATH is empty, it means the entire repo (or specific branch) needs to be cloned
     if [ -z "$FOLDER_PATH" ]; then
-        echo "Detected repository root. Cloning the repository..."
-        git clone -b "$BRANCH" "https://github.com/$USER/$REPO.git" "${DEST_DIR}/${REPO}"
-        echo "Cloned to ${DEST_DIR}/${REPO}/"
+        echo "Detected repository root. Cloning the repository..." >&2
+        git clone -b "$BRANCH" "https://github.com/$USER/$REPO.git" "${DEST_DIR}/${REPO}" >&2
+        echo "Cloned to ${DEST_DIR}/${REPO}/" >&2
+        echo "${DEST_DIR}/${REPO}/"
         exit 0
     fi
 
@@ -55,19 +51,16 @@ download_github_folder() {
     # Get the list of all files in the specified directory
     local FILES
     FILES=$(curl -s "$API_URL" | grep -Eo '"download_url": "[^"]+"' | grep -Eo "https://raw[^\" ]+")
-    # Download each file
+    # echo "API Response: $FILES"
+
+    # Download each file to the specified destination directory
     for FILE_URL in $FILES; do
         # Extract the file path from the URL to create a local directory structure
-        local FILE_PATH
-        local LOCAL_PATH
-        local FILE_NAME
+        local FILE_PATH LOCAL_PATH FILE_NAME
         FILE_PATH=${FILE_URL##*/}
-
         PARENT_DIR_NAME=$(basename "$FOLDER_PATH")
-
         FILE_NAME=$(basename "${FILE_PATH}")
 
-        # LOCAL_PATH="${DEST_DIR}/${PARENT_DIR_NAME}/${FILE_NAME}"
         if [[ $(echo "$FILES" | wc -l) -eq 1 ]]; then
             LOCAL_PATH="${DEST_DIR}/${FILE_NAME}"
         else
@@ -77,22 +70,20 @@ download_github_folder() {
         # Create folder structure and download file
         mkdir -p "$(dirname "$LOCAL_PATH")"
 
-        # echo "FILE name: $FILE_NAME"
-        # echo "FILE path: $FILE_PATH"
-        # echo "LOCAL_PATH: $LOCAL_PATH"
-        # find "$(dirname "$LOCAL_PATH")" | cat
-        # echo "Attempting to download to: $LOCAL_PATH"
-        curl "$FILE_URL" -o "$LOCAL_PATH"
+        # echo "local path: $LOCAL_PATH"
+        # echo "file url: $FILE_URL"
+        # echo "file name: $FILE_NAME"
+        curl "$FILE_URL" -o "$LOCAL_PATH" >&2
     done
 
-    echo "Downloaded to $DEST_DIR"
+    # echo "Downloaded to $DEST_DIR"
+    echo "$DEST_DIR"
 }
 
-# Check for the correct number of arguments
 if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <GitHub URL> [<Destination Path>]"
     echo ""
-    echo "GitHubUniversalFetcher is designed to download content from any GitHub URL using DownGit."
+    echo "GitHubUniversalFetcher is designed to download content from any GitHub URL."
     echo "It handles file, folder, or entire repository URLs from GitHub."
     echo ""
     echo "Parameters:"
@@ -108,25 +99,43 @@ fi
 
 get_destination_path() {
     local provided_path="$1"
-    if [[ -n "$provided_path" ]]; then
+
+    # If no path is provided, default to the ~/Downloads folder
+    if [[ -z "$provided_path" ]]; then
+        get_visible_finder_directory
+        return
+    fi
+
+    # Handle ~ for home directory
+    if [[ "$provided_path" == \~* ]]; then
+        echo "${provided_path/#\~/$HOME}"
+        return
+    fi
+
+    # If path is absolute, return as is
+    if [[ "$provided_path" == /* ]]; then
         echo "$provided_path"
+        return
+    fi
+
+    # Handle other relative paths
+    realpath "$provided_path"
+}
+
+get_visible_finder_directory() {
+    local finder_path=""
+    finder_path=$(osascript "$APPLESCRIPT_DIR/getVisibleFinderDir.js")
+
+    # If we got a path from Finder, use it. Otherwise, default to the Downloads folder.
+    if [[ -z "$finder_path" ]]; then
+        echo "$HOME/Downloads/"
     else
-        if [[ -z "$RAYCAST_SCHEMA_VERSION" ]]; then
-            # If not run from Raycast, return the provided path
-            echo "$provided_path"
-            return
-        fi
-        # If path is not provided, try to get the focused Finder window path
-        local focused_finder_path
-        focused_finder_path=$(osascript -e 'tell app "Finder" to get the POSIX path of (target of front window as alias)' 2>/dev/null)
-        if [[ -z "$focused_finder_path" ]]; then
-            # If no Finder window is focused, default to the desktop
-            echo "$HOME/Desktop"
-        else
-            echo "$focused_finder_path"
-        fi
+        echo "$finder_path"
     fi
 }
 
-echo args: "$1" "$(get_destination_path "$2")"
-download_github_folder "$1" "$(get_destination_path "$2")"
+destination="$(download_github_folder "$1" "$(get_destination_path "$2")")"
+# echo "Downloaded to $destination"
+
+osascript -l JavaScript "$APPLESCRIPT_DIR/displayDialog.js" "$destination"
+exit 0

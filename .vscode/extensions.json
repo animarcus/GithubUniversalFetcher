@@ -1,0 +1,35 @@
+{
+	"recommendations": [
+		// General Extensions
+		"alefragnani.project-manager", // Helps manage multiple projects in VS Code
+		"eamodio.gitlens", // Provides Git capabilities in VS Code
+		"GitHub.copilot", // GitHub Copilot AI pair programming tool
+		"GitHub.github-vscode-theme", // GitHub's theme for VS Code
+		"GitHub.vscode-pull-request-github", // Review and manage GitHub pull requests in VS Code
+		"ms-azuretools.vscode-docker", // Docker integration for VS Code
+		"ms-vsliveshare.vsliveshare", // Live Share provides real-time collaboration with others
+		"WakaTime.vscode-wakatime", // Metrics, insights, and time tracking for programmers
+		// Icon and Theme Extensions
+		"PKief.material-icon-theme", // Material design icons for VS Code
+		"vscode-icons-team.vscode-icons", // Icons for VS Code
+		// Code Formatting and Comments
+		"aaron-bond.better-comments", // Improve your code commenting by annotating with alert, informational, TODOs, and more
+		"aeschli.vscode-css-formatter", // CSS formatter
+		"esbenp.prettier-vscode", // Code formatter using prettier
+		"formulahendry.code-runner", // Run code snippets or code files for multiple languages
+		"foxundermoon.shell-format", // Shell script formatter
+		// Markdown Extensions
+		"bierner.markdown-emoji", // Add emojis to your markdown files
+		"bierner.markdown-preview-github-styles", // Preview markdown files in GitHub style
+		"DavidAnson.vscode-markdownlint", // Markdown linting and style checking
+		"goessner.mdmath", // Allows to use LaTeX for math in Markdown
+		"yzhang.markdown-all-in-one", // All you need to write Markdown (keyboard shortcuts, table of contents, auto preview, and more)
+		// Bash/Shell Scripting Extensions
+		"lizebang.bash-extension-pack", // A collection of popular bash extensions packed together
+		"mads-hartmann.bash-ide-vscode", // Bash language server integration
+		"rogalmic.bash-debug", // Debug bash scripts using bashdb
+		"rpinski.shebang-snippets", // Snippets for common Unix shebangs
+		"shakram02.bash-beautify", // Beautify bash shell scripts
+		"timonwong.shellcheck" // Lint bash scripts using ShellCheck
+	]
+}
