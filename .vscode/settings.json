@@ -30,7 +30,6 @@
         "*.ipynb": "jupyter-notebook",
         "*.pdf": "latex-workshop-pdf-hook"
     },
-    "workbench.editor.untitled.hint": "hidden",
     "python.languageServer": "Pylance",
     "workbench.sideBar.location": "right",
     "C_Cpp.default.compilerPath": "/bin/gcc",
@@ -132,5 +131,6 @@
     "files.exclude": {
         "**/node_modules": true,
         "**/dist": true
-    }
+    },
+    "workbench.editor.empty.hint": "hidden"
 }
