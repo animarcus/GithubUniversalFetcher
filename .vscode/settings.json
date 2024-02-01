@@ -18,7 +18,7 @@
         "typescriptreact"
     ],
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
+        "source.fixAll.eslint": "explicit"
     },
     "files.insertFinalNewline": true,
     "workbench.iconTheme": "vscode-icons",
@@ -90,7 +90,7 @@
     },
     "C_Cpp.intelliSenseEngine": "disabled",
     "[cpp]": {
-        "editor.wordBasedSuggestions": false,
+        "editor.wordBasedSuggestions": "off",
         "editor.suggest.insertMode": "replace",
         "editor.semanticHighlighting.enabled": true,
         "editor.defaultFormatter": "xaver.clang-format"
