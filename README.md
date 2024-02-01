@@ -59,8 +59,7 @@ GitHubUniversalFetcher can be easily integrated with [Raycast](https://www.rayca
 ### Setting up for Raycast
 
 1. Ensure you've installed Raycast from the [official website](https://www.raycast.com/).
-2. Clone this repository or download the `GithubUniversalFetcher.sh` script.
-3. Move the script to a directory that Raycast will scan for script commands. By default, Raycast looks in `~/.raycast/script-commands/`.
+2. Clone this repository to a directory that Raycast will scan for script commands. By default, Raycast looks in `~/.raycast/script-commands/`.
 4. Provide execute permissions: `chmod +x ~/.raycast/script-commands/GithubUniversalFetcher.sh`
 5. Open Raycast and refresh script commands by using the shortcut `cmd + shift + r`.
 
